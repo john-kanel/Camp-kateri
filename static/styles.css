@@ -242,13 +242,38 @@ textarea {
   display: block;
   width: auto;
   cursor: grab;
+  position: relative;
   white-space: normal;
   overflow: visible;
   text-overflow: clip;
   line-height: 1.2;
-  padding: 2px 4px;
+  padding: 2px 18px 2px 4px;
   border-radius: 4px;
   background: #eff6ff;
+}
+
+.counselor-delete-btn {
+  display: none;
+  margin-left: 6px;
+  border: 0;
+  background: transparent;
+  color: #b91c1c;
+  font-weight: 700;
+  cursor: pointer;
+  line-height: 1;
+  padding: 0;
+}
+
+.counselor-chip .counselor-delete-btn {
+  position: absolute;
+  right: 4px;
+  top: 2px;
+  margin-left: 0;
+}
+
+.counselor-chip:hover .counselor-delete-btn,
+.camper-row:hover .counselor-delete-btn {
+  display: inline-block;
 }
 
 .camp-col-head-short {

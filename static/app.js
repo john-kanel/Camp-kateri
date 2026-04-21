@@ -357,11 +357,19 @@ function buildCounselorReviewState(payload) {
     warningSummaryByCamp: {},
     eligibilityByCamp: {},
     loadStatusByCounselorId: {},
+    loadMetaByCounselorId: {},
   };
   const loadSummary = Array.isArray(payload?.counselor_load_summary) ? payload.counselor_load_summary : [];
   loadSummary.forEach((row) => {
     const cid = String(row?.counselor_id || "").trim();
     if (!cid) return;
+    state.loadMetaByCounselorId[cid] = {
+      counselor_id: cid,
+      counselor_name: String(row?.counselor_name || "").trim(),
+      gender: String(row?.gender || "").trim(),
+      willing_raw: String(row?.willing_raw || "").trim(),
+      willing_capacity: toPositiveInt(row?.willing_capacity),
+    };
     state.loadStatusByCounselorId[cid] = {
       emoji: String(row?.status_emoji || "").trim(),
       reason: String(row?.status_reason || "").trim(),
@@ -582,6 +590,72 @@ function updateCounselorRequestCounters(state) {
   if (counselorPurpleCount) counselorPurpleCount.textContent = `🟪 ${purple}`;
 }
 
+function buildCounselorLoadRowsFromState(state) {
+  if (!state) return [];
+  const assignedCountByCounselorId = {};
+  Object.values(state.assignmentById || {}).forEach((entry) => {
+    const counselorId = String(entry?.counselorId || "").trim();
+    if (!counselorId) return;
+    const campKey = state.assignmentCampById?.[entry.assignmentId];
+    if (campKey === "__UNASSIGNED__") return;
+    assignedCountByCounselorId[counselorId] = (assignedCountByCounselorId[counselorId] || 0) + 1;
+  });
+  const allCounselorIds = new Set();
+  Object.keys(state.loadMetaByCounselorId || {}).forEach((cid) => allCounselorIds.add(String(cid)));
+  Object.values(state.assignmentById || {}).forEach((entry) => {
+    const counselorId = String(entry?.counselorId || "").trim();
+    if (counselorId) allCounselorIds.add(counselorId);
+  });
+  const rows = [];
+  allCounselorIds.forEach((cid) => {
+    const meta = state.loadMetaByCounselorId?.[cid] || {};
+    const assignedCount = toPositiveInt(assignedCountByCounselorId[cid] || 0);
+    const willingRaw = String(meta.willing_raw || "").trim();
+    const willingNorm = willingRaw.toLowerCase();
+    const willingCapacity = toPositiveInt(meta.willing_capacity || 0);
+    let status_emoji = "👌🏼";
+    let status_reason = "No willing-camps value provided.";
+    if (willingNorm) {
+      const isUnlimited = willingNorm.includes("as many")
+        || ["all", "any", "unlimited", "no limit"].includes(willingNorm);
+      if (isUnlimited) {
+        status_emoji = assignedCount === 0 ? "🥶" : "👌🏼";
+        status_reason = assignedCount === 0
+          ? "Unlimited willingness but currently assigned to zero camps."
+          : "Unlimited willingness value.";
+      } else if (assignedCount > willingCapacity) {
+        status_emoji = "🥵";
+        status_reason = "Assigned to more camps than willing-camps value.";
+      } else if (assignedCount === willingCapacity) {
+        status_emoji = "👌🏼";
+        status_reason = "Assigned to exactly willing-camps value.";
+      } else {
+        status_emoji = "🥶";
+        status_reason = "Assigned to fewer camps than willing-camps value.";
+      }
+    }
+    state.loadStatusByCounselorId[cid] = { emoji: status_emoji, reason: status_reason };
+    rows.push({
+      counselor_id: cid,
+      counselor_name: String(meta.counselor_name || "").trim() || cid,
+      gender: String(meta.gender || "").trim(),
+      assigned_count: assignedCount,
+      willing_raw: willingRaw,
+      willing_capacity: willingCapacity,
+      status_emoji,
+      status_reason,
+    });
+  });
+  rows.sort((a, b) => String(a.counselor_name || "").localeCompare(String(b.counselor_name || "")));
+  Object.values(state.assignmentById || {}).forEach((entry) => {
+    const cid = String(entry?.counselorId || "").trim();
+    const status = state.loadStatusByCounselorId?.[cid] || {};
+    entry.loadStatusEmoji = String(status.emoji || "");
+    entry.loadStatusReason = String(status.reason || "");
+  });
+  return rows;
+}
+
 function renderCounselorLoadStatus(rows) {
   if (!counselorLoadWrap || !counselorLoadFemaleList || !counselorLoadMaleList) return;
   counselorLoadFemaleList.innerHTML = "";
@@ -663,7 +737,7 @@ function renderCounselorDashboard(state) {
   counselorDashboardWrap.appendChild(ul);
 }
 
-function renderCounselorCardMember(list, counselor) {
+function renderCounselorCardMember(list, counselor, state) {
   const li = document.createElement("li");
   li.className = "camper-row";
   li.draggable = true;
@@ -706,6 +780,23 @@ function renderCounselorCardMember(list, counselor) {
     reason.textContent = ` - ${counselor.reason}`;
     li.appendChild(reason);
   }
+  const deleteBtn = document.createElement("button");
+  deleteBtn.type = "button";
+  deleteBtn.className = "counselor-delete-btn";
+  deleteBtn.textContent = "×";
+  deleteBtn.title = "Delete this counselor from this week only";
+  deleteBtn.draggable = false;
+  deleteBtn.addEventListener("click", (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    const changed = deleteCounselorAssignment(state, counselor.assignmentId);
+    if (changed) {
+      renderCounselorLayout(state);
+      renderCounselorDashboard(state);
+      setSectionStatus("counselorStatusWrap", "counselorStatusText", "Deleted counselor for this week only.", false);
+    }
+  });
+  li.appendChild(deleteBtn);
   list.appendChild(li);
 }
 
@@ -742,6 +833,27 @@ function moveCounselorBetweenCamps(state, assignmentId, targetCampKey) {
   state.assignmentCampById[assignmentId] = targetCampKey;
   recomputeCounselorFriendStatus(state);
   updateCounselorRequestCounters(state);
+  renderCounselorLoadStatus(buildCounselorLoadRowsFromState(state));
+  return true;
+}
+
+function deleteCounselorAssignment(state, assignmentId) {
+  if (!state || !assignmentId) return false;
+  const sourceKey = state.assignmentCampById[assignmentId];
+  if (!sourceKey) return false;
+  if (sourceKey === "__UNASSIGNED__") {
+    const idx = state.unassigned.findIndex((x) => x.assignmentId === assignmentId);
+    if (idx >= 0) state.unassigned.splice(idx, 1);
+  } else if (state.campsByKey[sourceKey]) {
+    const members = state.campsByKey[sourceKey].members;
+    const idx = members.findIndex((x) => x.assignmentId === assignmentId);
+    if (idx >= 0) members.splice(idx, 1);
+  }
+  delete state.assignmentCampById[assignmentId];
+  delete state.assignmentById[assignmentId];
+  recomputeCounselorFriendStatus(state);
+  updateCounselorRequestCounters(state);
+  renderCounselorLoadStatus(buildCounselorLoadRowsFromState(state));
   return true;
 }
 
@@ -773,7 +885,7 @@ function statusLabel(assigned, slots) {
   return `${left} LEFT`;
 }
 
-function buildCounselorChip(counselor) {
+function buildCounselorChip(counselor, state) {
   const chip = document.createElement("span");
   chip.className = "counselor-chip";
   chip.draggable = true;
@@ -801,6 +913,23 @@ function buildCounselorChip(counselor) {
     e.dataTransfer.setData("text/counselor-assignment-id", counselor.assignmentId);
     e.dataTransfer.effectAllowed = "move";
   });
+  const deleteBtn = document.createElement("button");
+  deleteBtn.type = "button";
+  deleteBtn.className = "counselor-delete-btn";
+  deleteBtn.textContent = "×";
+  deleteBtn.title = "Delete this counselor from this week only";
+  deleteBtn.draggable = false;
+  deleteBtn.addEventListener("click", (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    const changed = deleteCounselorAssignment(state, counselor.assignmentId);
+    if (changed) {
+      renderCounselorLayout(state);
+      renderCounselorDashboard(state);
+      setSectionStatus("counselorStatusWrap", "counselorStatusText", "Deleted counselor for this week only.", false);
+    }
+  });
+  chip.appendChild(deleteBtn);
   return chip;
 }
 
@@ -834,7 +963,7 @@ function renderCounselorUnassigned(state) {
       setSectionStatus("counselorStatusWrap", "counselorStatusText", "Manual counselor move applied in review view.", false);
     }
   };
-  members.forEach((c) => renderCounselorCardMember(counselorUnassignedList, c));
+  members.forEach((c) => renderCounselorCardMember(counselorUnassignedList, c, state));
 }
 
 function renderCounselorLayout(state) {
@@ -913,7 +1042,7 @@ function renderCounselorLayout(state) {
       const counselor = campSplit[campKey].female[i];
       if (counselor) {
         td.dataset.occupiedBy = counselor.assignmentId;
-        td.appendChild(buildCounselorChip(counselor));
+        td.appendChild(buildCounselorChip(counselor, state));
       }
       td.addEventListener("dragover", (e) => {
         e.preventDefault();
@@ -981,7 +1110,7 @@ function renderCounselorLayout(state) {
       const counselor = campSplit[campKey].male[i];
       if (counselor) {
         td.dataset.occupiedBy = counselor.assignmentId;
-        td.appendChild(buildCounselorChip(counselor));
+        td.appendChild(buildCounselorChip(counselor, state));
       }
       td.addEventListener("dragover", (e) => {
         e.preventDefault();
@@ -1768,7 +1897,7 @@ function handleCounselorRunSuccess(result) {
   counselorReviewState = buildCounselorReviewState(result.review || {});
   recomputeCounselorFriendStatus(counselorReviewState);
   updateCounselorRequestCounters(counselorReviewState);
-  renderCounselorLoadStatus(result?.review?.counselor_load_summary || []);
+  renderCounselorLoadStatus(buildCounselorLoadRowsFromState(counselorReviewState));
   if (counselorReviewWrap) counselorReviewWrap.classList.remove("hidden");
   renderCounselorDashboard(counselorReviewState);
   renderCounselorLayout(counselorReviewState);
