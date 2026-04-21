@@ -1,0 +1,64 @@
+{
+  "campers_sheet": "campers",
+  "counselors_sheet": "counselors",
+  "camp_targets_sheet": "camp_targets",
+  "week_column": "Week",
+  "campers": {
+    "first_name": "First Name",
+    "last_name": "Last Name",
+    "gender": "Gender",
+    "grade": "Grade",
+    "date_of_birth": "Date of Birth",
+    "school": "School",
+    "disability_flag": "Disability Support",
+    "roommate_requests": "Roommate Requests"
+  },
+  "counselors": {
+    "first_name": "First Name",
+    "last_name": "Last Name",
+    "gender": "Gender",
+    "email": "Email",
+    "availability": "Available Camps",
+    "preference_1": "Top Choice 1",
+    "preference_2": "Top Choice 2",
+    "preference_3": "Top Choice 3",
+    "willing_camps": "Willing Camps",
+    "friend_requests": "Friend Requests"
+  },
+  "roommate_split_regex": "[,;/&]|\\band\\b",
+  "max_roommate_requests_per_camper": 2,
+  "cabins": {
+    "total_per_week": 7,
+    "max_per_cabin": 12,
+    "min_per_open_cabin": 7,
+    "max_disability_per_cabin": 2,
+    "max_same_school_per_cabin": 4,
+    "strict_grade_span": 2,
+    "allow_grade_relaxation": true,
+    "other_school_labels": [
+      "other",
+      "public",
+      "public school",
+      "n/a",
+      "na",
+      ""
+    ],
+    "strict_adjacent_grades": true
+  },
+  "matching": {
+    "name_fuzzy_threshold": 82,
+    "school_fuzzy_threshold": 90
+  },
+  "counselor_assignment": {
+    "slots_per_camp": {
+      "female": 12,
+      "male": 9
+    },
+    "preference_scores": {
+      "1": 100,
+      "2": 70,
+      "3": 40
+    },
+    "friend_bonus": 8
+  }
+}

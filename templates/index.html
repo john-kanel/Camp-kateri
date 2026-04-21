@@ -1,0 +1,275 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Camp Assignment App</title>
+    <link rel="stylesheet" href="/static/styles.css" />
+  </head>
+  <body>
+    <main class="container">
+      <h1>Camp Assignment App</h1>
+      <p class="sub">Two sides: Camper Assignments and Counselor Assignments.</p>
+      <div class="tab-nav">
+        <button id="tabResultsBtn" class="btn secondary" type="button">Results</button>
+        <button id="tabSettingsBtn" class="btn secondary" type="button">Settings</button>
+      </div>
+
+      <div id="resultsTab">
+
+      <section class="card">
+        <h2>Shared Upload (One Time)</h2>
+        <label for="sharedInputFile">Upload file once (.xlsx or .csv)</label>
+        <input
+          id="sharedInputFile"
+          name="input_file"
+          type="file"
+          accept=".xlsx,.csv"
+          required
+        />
+        <label for="sharedConfigFile">Optional config.json</label>
+        <input id="sharedConfigFile" name="config_file" type="file" accept=".json" />
+      </section>
+
+      <section class="card">
+        <h2>Camper Side</h2>
+        <p>Step 1: Upload file, Step 2: Match fields, Step 3: Run.</p>
+        <button id="camperInspectBtn" class="btn" type="button">Step 2 - Match Fields</button>
+        <div id="camperMappingWrap" class="mapping-wrap hidden"></div>
+        <button id="camperRunBtn" class="btn hidden" type="button">Step 3 - Run Camper Assignment</button>
+        <div id="camperStatusWrap" class="result-wrap hidden">
+          <p id="camperStatusText"></p>
+        </div>
+        <div id="camperReviewWrap" class="review-wrap hidden">
+          <h3>Cabin Review</h3>
+          <p class="tiny">
+            Review cabin assignments before export. You can go back and adjust mapping, restart,
+            or export from here.
+          </p>
+          <div class="review-actions">
+            <button id="camperBackBtn" class="btn secondary" type="button">
+              Back to Field Mapping
+            </button>
+            <button id="camperUndoBtn" class="btn secondary" type="button" disabled>Undo Move</button>
+            <button id="camperRedoBtn" class="btn secondary" type="button" disabled>Redo Move</button>
+            <button id="camperRerunBtn" class="btn secondary" type="button">Re-run with Current Settings</button>
+            <button id="camperSettingsBtn" class="btn secondary" type="button">Go to Settings</button>
+            <button id="camperRestartBtn" class="btn secondary" type="button">Restart</button>
+            <a id="camperExportBtn" class="btn hidden" href="#">Export Camper Output</a>
+          </div>
+          <div id="roommateCounterWrap" class="review-stats tiny"></div>
+          <div id="camperCabinLayout" class="cabin-layout"></div>
+          <div id="camperUnassignedWrap" class="unassigned-wrap hidden">
+            <h4>Unassigned</h4>
+            <ul id="camperUnassignedList"></ul>
+          </div>
+        </div>
+        <p class="tiny">
+          Prefer templates? <a href="/api/template/campers">Download Camper Template</a>
+        </p>
+      </section>
+
+      <section class="card">
+        <h2>Counselor Side</h2>
+        <p>Step 1: Upload file, Step 2: Match fields, Step 3: Run.</p>
+        <label for="counselorCampParameters">Camp Sessions (required for counselor assignment)</label>
+        <textarea
+          id="counselorCampParameters"
+          rows="5"
+          placeholder="One camp/session per line. The app uses these lines as fixed sessions.
+Each listed session gets 12 female slots and 9 male slots.
+Example:
+SKY Camp Session 1"
+        >SKY Camp Session 1
+SKY Camp Session 2
+SKY Camp Session 3
+SKY Camp Session 4
+SKY Games Session 1
+SKY Games Session 2
+Western Camp Session 1
+Western Camp Session 2</textarea>
+        <p class="tiny">
+          This drives counselor assignment sessions. Availability and preferences auto-match long variants (including date ranges) to these session names.
+        </p>
+        <button id="counselorInspectBtn" class="btn" type="button">Step 2 - Match Fields</button>
+        <div id="counselorMappingWrap" class="mapping-wrap hidden"></div>
+        <label class="tiny" for="counselorSingleCampOnly">
+          <input id="counselorSingleCampOnly" type="checkbox" />
+          Assign each counselor to only one camp (prioritize #1 preference)
+        </label>
+        <button id="counselorRunBtn" class="btn hidden" type="button">Step 3 - Run Counselor Assignment</button>
+        <div id="counselorStatusWrap" class="result-wrap hidden">
+          <p id="counselorStatusText"></p>
+          <a id="counselorDownloadLink" class="btn hidden" href="#"
+            >Download Counselor Output</a
+          >
+        </div>
+        <div id="counselorReviewWrap" class="review-wrap hidden">
+          <h3>Counselor Review</h3>
+          <p class="tiny">
+            Review placements by camp and drag counselors between camps to adjust manually.
+          </p>
+          <p class="tiny">
+            Friend request status:
+            <span title="Friend request not fulfilled">🔴</span>
+            <span title="Friend request fulfilled">🟢</span>
+            <span title="Requested counselor not found">⚫️</span>
+            <span title="This counselor was requested by someone else">🟪</span>
+            &nbsp;|&nbsp; Totals:
+            <span id="counselorRedCount">🔴 0</span>
+            <span id="counselorGreenCount">🟢 0</span>
+            <span id="counselorBlackCount">⚫️ 0</span>
+            <span id="counselorPurpleCount">🟪 0</span>
+          </p>
+          <div class="review-actions">
+            <button id="counselorBackBtn" class="btn secondary" type="button">
+              Back to Field Mapping
+            </button>
+          </div>
+          <div id="counselorRequestCounterWrap" class="review-stats tiny"></div>
+          <div id="counselorDashboardWrap" class="review-stats tiny"></div>
+          <div id="counselorCampLayout" class="cabin-layout"></div>
+          <div id="counselorUnassignedWrap" class="unassigned-wrap hidden">
+            <h4>Unassigned Counselors</h4>
+            <ul id="counselorUnassignedList"></ul>
+          </div>
+        </div>
+        <p class="tiny">
+          Prefer templates? <a href="/api/template/counselors">Download Counselor Template</a>
+        </p>
+      </section>
+
+      <section id="metricsCard" class="card hidden">
+        <h2>Metrics</h2>
+        <ul id="metricsList"></ul>
+        <div id="counselorLoadWrap" class="hidden">
+          <h3>Counselor Camp Load Status</h3>
+          <h4>Girls</h4>
+          <ul id="counselorLoadFemaleList"></ul>
+          <h4>Guys</h4>
+          <ul id="counselorLoadMaleList"></ul>
+        </div>
+      </section>
+
+      <section id="warningsCard" class="card hidden">
+        <h2>Warnings (preview)</h2>
+        <div class="table-wrap">
+          <table id="warningsTable">
+            <thead>
+              <tr>
+                <th>Level</th>
+                <th>Type</th>
+                <th>Message</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </section>
+      </div>
+
+      <div id="settingsTab" class="hidden">
+        <section class="card">
+          <h2>Settings</h2>
+          <p class="tiny">
+            Change assignment parameters, then go back to results and re-run.
+          </p>
+
+          <h3>Cabin Rules</h3>
+          <div class="settings-grid">
+            <div>
+              <label for="set_total_per_week">Cabins per week</label>
+              <input id="set_total_per_week" type="number" min="1" />
+            </div>
+            <div>
+              <label for="set_max_per_cabin">Max per cabin</label>
+              <input id="set_max_per_cabin" type="number" min="1" />
+            </div>
+            <div>
+              <label for="set_min_per_open_cabin">Min per open cabin</label>
+              <input id="set_min_per_open_cabin" type="number" min="1" />
+            </div>
+            <div>
+              <label for="set_max_disability_per_cabin">Max disability per cabin</label>
+              <input id="set_max_disability_per_cabin" type="number" min="0" />
+            </div>
+            <div>
+              <label for="set_max_same_school_per_cabin">Max same school per cabin</label>
+              <input id="set_max_same_school_per_cabin" type="number" min="1" />
+            </div>
+            <div>
+              <label for="set_strict_grade_span">Max grade distance in strict pass</label>
+              <input id="set_strict_grade_span" type="number" min="0" />
+              <p class="tiny">
+                0 = same grade only, 1 = adjacent grades, 2 = up to two grades apart.
+              </p>
+            </div>
+            <div>
+              <label for="set_allow_grade_relaxation">Allow grade relaxation fallback</label>
+              <select id="set_allow_grade_relaxation">
+                <option value="true">Yes</option>
+                <option value="false">No (keep grade distance strict)</option>
+              </select>
+              <p class="tiny">
+                If set to No, reruns will not relax grade distance in fallback placement.
+              </p>
+            </div>
+            <div>
+              <label for="set_max_roommate_requests">Max roommate requests per camper</label>
+              <input id="set_max_roommate_requests" type="number" min="0" max="5" />
+            </div>
+          </div>
+
+          <h3>Matching</h3>
+          <div class="settings-grid">
+            <div>
+              <label for="set_name_fuzzy_threshold">Name fuzzy threshold</label>
+              <input id="set_name_fuzzy_threshold" type="number" min="0" max="100" />
+            </div>
+            <div>
+              <label for="set_school_fuzzy_threshold">School fuzzy threshold</label>
+              <input id="set_school_fuzzy_threshold" type="number" min="0" max="100" />
+            </div>
+          </div>
+
+          <h3>Counselor Scoring</h3>
+          <div class="settings-grid">
+            <div>
+              <label for="set_counselor_slots_female">Counselor slots per camp (female)</label>
+              <input id="set_counselor_slots_female" type="number" min="0" />
+            </div>
+            <div>
+              <label for="set_counselor_slots_male">Counselor slots per camp (male)</label>
+              <input id="set_counselor_slots_male" type="number" min="0" />
+            </div>
+            <div>
+              <label for="set_pref1">Preference score #1</label>
+              <input id="set_pref1" type="number" min="0" />
+            </div>
+            <div>
+              <label for="set_pref2">Preference score #2</label>
+              <input id="set_pref2" type="number" min="0" />
+            </div>
+            <div>
+              <label for="set_pref3">Preference score #3</label>
+              <input id="set_pref3" type="number" min="0" />
+            </div>
+            <div>
+              <label for="set_friend_bonus">Friend bonus</label>
+              <input id="set_friend_bonus" type="number" min="0" />
+            </div>
+          </div>
+
+          <div class="review-actions">
+            <button id="saveSettingsBtn" class="btn" type="button">Save Settings</button>
+            <button id="resetSettingsBtn" class="btn secondary" type="button">Reset Defaults</button>
+            <button id="settingsBackBtn" class="btn secondary" type="button">Back to Results</button>
+          </div>
+          <p id="settingsStatus" class="tiny"></p>
+        </section>
+      </div>
+    </main>
+
+    <script src="/static/app.js"></script>
+  </body>
+  </html>
