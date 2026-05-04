@@ -1,8 +1,80 @@
+/* Summer camp: warm neutrals, pine greens, sunshine accents — typography only tweaks UI polish */
+
+:root {
+  --font-display: "Fraunces", Georgia, "Times New Roman", serif;
+  --font-body: "Nunito Sans", system-ui, -apple-system, sans-serif;
+
+  --camp-cream: #f4f1ea;
+  --camp-paper: #fdfaf6;
+  --camp-muted: #ebe6dc;
+  --camp-border: #ddd4c4;
+  --camp-text: #2a3428;
+  --camp-text-muted: #5a5648;
+
+  --camp-pine: #2f5d41;
+  --camp-pine-hover: #254a34;
+  --camp-bark: #5e5346;
+  --camp-bark-hover: #4a4339;
+  --camp-sun: #c8942d;
+
+  --camp-chip: #e8f2eb;
+  --camp-accent-soft: rgba(47, 93, 65, 0.12);
+
+  --cabin-girl-bg: #f9e9ef;
+  --cabin-boy-bg: #e6f3fa;
+
+  --ok: #1d6b42;
+  --error: #a61f1f;
+
+  --radius-card: 12px;
+  --radius-btn: 10px;
+  --radius-sm: 8px;
+
+  color-scheme: light;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
 body {
   margin: 0;
-  font-family: Arial, sans-serif;
-  background: #f7f7fa;
-  color: #1f2937;
+  font-family: var(--font-body);
+  font-size: 16px;
+  line-height: 1.55;
+  background: var(--camp-cream)
+    radial-gradient(
+      ellipse 120% 80% at 50% -10%,
+      rgba(232, 220, 198, 0.65) 0%,
+      transparent 55%
+    );
+  background-attachment: fixed;
+  color: var(--camp-text);
+}
+
+h1,
+h2,
+h3,
+h4 {
+  font-family: var(--font-display);
+  font-weight: 600;
+  letter-spacing: 0.01em;
+}
+
+a {
+  color: var(--camp-pine);
+  font-weight: 600;
+}
+
+a:hover {
+  color: var(--camp-pine-hover);
+}
+
+:focus-visible {
+  outline: 2px solid var(--camp-sun);
+  outline-offset: 2px;
 }
 
 .container {
@@ -13,31 +85,41 @@ body {
 
 .tab-nav {
   display: flex;
-  gap: 8px;
-  margin-bottom: 10px;
+  gap: 10px;
+  margin-bottom: 14px;
+  flex-wrap: wrap;
 }
 
 h1 {
-  margin-bottom: 6px;
+  margin-bottom: 8px;
+  font-size: 1.85rem;
+  font-weight: 700;
+  color: var(--camp-text);
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.4);
 }
 
 .sub {
   margin-top: 0;
-  color: #4b5563;
+  color: var(--camp-text-muted);
+  font-size: 1.02rem;
 }
 
 .card {
-  background: #ffffff;
-  border: 1px solid #e5e7eb;
-  border-radius: 10px;
-  padding: 16px;
-  margin-top: 14px;
+  background: var(--camp-paper);
+  border: 1px solid var(--camp-border);
+  border-radius: var(--radius-card);
+  padding: 18px 20px;
+  margin-top: 16px;
+  box-shadow:
+    0 1px 2px rgba(42, 52, 40, 0.04),
+    0 8px 24px rgba(42, 52, 40, 0.05);
 }
 
 label {
   display: block;
-  margin: 12px 0 6px;
+  margin: 14px 0 6px;
   font-weight: 600;
+  color: var(--camp-text);
 }
 
 input[type="file"] {
@@ -46,18 +128,31 @@ input[type="file"] {
 
 input[type="number"] {
   width: 100%;
-  padding: 8px;
+  padding: 10px 12px;
+  border: 1px solid var(--camp-border);
+  border-radius: var(--radius-sm);
+  font-family: inherit;
+  font-size: 15px;
+  background: var(--camp-paper);
 }
 
 select {
   width: 100%;
-  padding: 8px;
+  padding: 10px 12px;
+  border: 1px solid var(--camp-border);
+  border-radius: var(--radius-sm);
+  font-family: inherit;
+  font-size: 15px;
+  background: var(--camp-paper);
 }
 
 textarea {
   width: 100%;
-  padding: 8px;
+  padding: 10px 12px;
   font-family: inherit;
+  border: 1px solid var(--camp-border);
+  border-radius: var(--radius-sm);
+  background: var(--camp-paper);
   box-sizing: border-box;
 }
 
@@ -65,16 +160,30 @@ textarea {
   display: inline-block;
   margin-top: 14px;
   border: 0;
-  border-radius: 8px;
-  padding: 10px 14px;
-  background: #2563eb;
-  color: white;
+  border-radius: var(--radius-btn);
+  padding: 11px 16px;
+  background: var(--camp-pine);
+  color: #fdfcf9;
   text-decoration: none;
   cursor: pointer;
+  font-family: var(--font-body);
+  font-weight: 700;
+  font-size: 0.95rem;
+  box-shadow: 0 2px 0 rgba(42, 52, 40, 0.12);
+  transition:
+    background 0.15s ease,
+    box-shadow 0.15s ease,
+    transform 0.05s ease;
 }
 
 .btn:hover {
-  background: #1d4ed8;
+  background: var(--camp-pine-hover);
+  box-shadow: 0 3px 0 rgba(42, 52, 40, 0.1);
+}
+
+.btn:active {
+  transform: translateY(1px);
+  box-shadow: 0 1px 0 rgba(42, 52, 40, 0.1);
 }
 
 .hidden {
@@ -91,10 +200,10 @@ textarea {
 
 .mapping-wrap {
   margin-top: 12px;
-  border: 1px solid #e5e7eb;
-  border-radius: 8px;
-  padding: 10px;
-  background: #fafafa;
+  border: 1px solid var(--camp-border);
+  border-radius: var(--radius-sm);
+  padding: 12px 14px;
+  background: var(--camp-muted);
 }
 
 .mapping-row {
@@ -110,16 +219,21 @@ textarea {
 
 .tiny {
   margin-top: 8px;
-  font-size: 12px;
-  color: #4b5563;
+  font-size: 13px;
+  color: var(--camp-text-muted);
+  line-height: 1.5;
 }
 
 .review-wrap {
   margin-top: 12px;
-  padding: 10px;
-  border: 1px solid #e5e7eb;
-  border-radius: 8px;
-  background: #fafafa;
+  padding: 14px;
+  border: 1px solid var(--camp-border);
+  border-radius: var(--radius-card);
+  background: linear-gradient(
+    165deg,
+    rgba(251, 248, 242, 0.95) 0%,
+    var(--camp-muted) 100%
+  );
 }
 
 .review-actions {
@@ -131,15 +245,17 @@ textarea {
 
 .review-stats {
   margin: 0 0 10px;
-  font-weight: 600;
+  font-weight: 700;
 }
 
 .btn.secondary {
-  background: #4b5563;
+  background: var(--camp-bark);
+  color: #fdfcf9;
+  box-shadow: 0 2px 0 rgba(42, 52, 40, 0.1);
 }
 
 .btn.secondary:hover {
-  background: #374151;
+  background: var(--camp-bark-hover);
 }
 
 .cabin-layout {
@@ -149,23 +265,25 @@ textarea {
 }
 
 .cabin-card {
-  border: 1px solid #e5e7eb;
-  border-radius: 8px;
-  background: #fff;
-  padding: 10px;
+  border: 1px solid var(--camp-border);
+  border-radius: var(--radius-sm);
+  background: var(--camp-paper);
+  padding: 12px;
+  box-shadow: 0 1px 4px rgba(42, 52, 40, 0.04);
 }
 
 .cabin-card.cabin-girl {
-  background: #fff2f7;
+  background: var(--cabin-girl-bg);
 }
 
 .cabin-card.cabin-boy {
-  background: #eef7ff;
+  background: var(--cabin-boy-bg);
 }
 
 .cabin-card h4 {
   margin: 0 0 6px;
   font-size: 14px;
+  font-family: var(--font-display);
 }
 
 .cabin-card ul {
@@ -185,15 +303,15 @@ textarea {
 }
 
 .cabin-card ul.drop-hover {
-  outline: 2px dashed #2563eb;
+  outline: 2px dashed var(--camp-pine);
   border-radius: 6px;
-  background: rgba(37, 99, 235, 0.06);
+  background: var(--camp-accent-soft);
 }
 
 .unassigned-wrap ul.drop-hover {
-  outline: 2px dashed #2563eb;
+  outline: 2px dashed var(--camp-pine);
   border-radius: 6px;
-  background: rgba(37, 99, 235, 0.06);
+  background: var(--camp-accent-soft);
 }
 
 .counselor-matrix {
@@ -218,24 +336,24 @@ textarea {
 }
 
 .counselor-matrix .slot-status-row td {
-  background: #f3f4f6;
-  color: #374151;
+  background: var(--camp-muted);
+  color: var(--camp-text);
   font-weight: 700;
 }
 
 .counselor-matrix .slot-cell {
   min-height: 28px;
   min-width: 150px;
-  background: #ffffff;
+  background: var(--camp-paper);
 }
 
 .counselor-matrix .slot-cell.slot-disabled {
-  background: #f3f4f6;
+  background: var(--camp-muted);
 }
 
 .counselor-matrix .slot-cell.drop-hover {
-  outline: 2px dashed #2563eb;
-  background: rgba(37, 99, 235, 0.08);
+  outline: 2px dashed var(--camp-pine);
+  background: var(--camp-accent-soft);
 }
 
 .counselor-chip {
@@ -249,7 +367,8 @@ textarea {
   line-height: 1.2;
   padding: 2px 18px 2px 4px;
   border-radius: 4px;
-  background: #eff6ff;
+  background: var(--camp-chip);
+  border: 1px solid rgba(47, 93, 65, 0.15);
 }
 
 .counselor-delete-btn {
@@ -257,7 +376,7 @@ textarea {
   margin-left: 6px;
   border: 0;
   background: transparent;
-  color: #b91c1c;
+  color: var(--error);
   font-weight: 700;
   cursor: pointer;
   line-height: 1;
@@ -278,13 +397,13 @@ textarea {
 
 .camp-col-head-short {
   font-weight: 700;
-  color: #111827;
+  color: var(--camp-text);
 }
 
 .camp-col-head-full {
   margin-top: 2px;
   font-size: 10px;
-  color: #4b5563;
+  color: var(--camp-text-muted);
   line-height: 1.2;
   word-break: break-word;
 }
@@ -313,8 +432,8 @@ textarea {
 }
 
 .camp-drop-cell.drop-hover {
-  outline: 2px dashed #2563eb;
-  background: rgba(37, 99, 235, 0.08);
+  outline: 2px dashed var(--camp-pine);
+  background: var(--camp-accent-soft);
 }
 
 .camp-pref-cell div {
@@ -350,12 +469,13 @@ textarea {
 
 .unassigned-wrap {
   margin-top: 12px;
-  border-top: 1px dashed #d1d5db;
-  padding-top: 10px;
+  border-top: 1px dashed var(--camp-border);
+  padding-top: 12px;
 }
 
 .unassigned-wrap h4 {
   margin: 0 0 6px;
+  font-family: var(--font-display);
 }
 
 .unassigned-wrap ul {
@@ -375,11 +495,11 @@ textarea {
 }
 
 .ok {
-  color: #065f46;
+  color: var(--ok);
 }
 
 .error {
-  color: #b91c1c;
+  color: var(--error);
 }
 
 .table-wrap {
@@ -395,5 +515,5 @@ th,
 td {
   text-align: left;
   padding: 8px;
-  border-bottom: 1px solid #e5e7eb;
+  border-bottom: 1px solid var(--camp-border);
 }
