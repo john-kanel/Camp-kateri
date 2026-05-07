@@ -30,6 +30,21 @@ NUMBER_WORDS = {
     "twelve": 12,
 }
 
+ORDINAL_WORDS = {
+    "first": 1,
+    "second": 2,
+    "third": 3,
+    "fourth": 4,
+    "fifth": 5,
+    "sixth": 6,
+    "seventh": 7,
+    "eighth": 8,
+    "ninth": 9,
+    "tenth": 10,
+    "eleventh": 11,
+    "twelfth": 12,
+}
+
 
 @dataclass
 class Camper:
@@ -131,6 +146,39 @@ def to_int(value, default: int = -1) -> int:
         return int(float(str(value).strip()))
     except Exception:
         return default
+
+
+def parse_grade_value(value, default: int = -1) -> int:
+    raw = normalize_text(value)
+    if raw in {"", "nan", "none", "null", "nat"}:
+        return default
+
+    # Accept direct numeric forms (e.g., "6", "6.0").
+    direct = to_int(raw, default=None)
+    if direct is not None:
+        return direct
+
+    # Accept embedded numeric forms (e.g., "grade 6", "6th grade").
+    m_num = re.search(r"\b(\d{1,2})(?:st|nd|rd|th)?\b", raw)
+    if m_num:
+        return int(m_num.group(1))
+
+    # Accept word forms (e.g., "grade six", "sixth grade").
+    m_word = re.search(
+        r"\b("
+        r"zero|one|two|three|four|five|six|seven|eight|nine|ten|eleven|twelve|"
+        r"first|second|third|fourth|fifth|sixth|seventh|eighth|ninth|tenth|eleventh|twelfth"
+        r")\b",
+        raw,
+    )
+    if m_word:
+        token = m_word.group(1)
+        if token in NUMBER_WORDS:
+            return NUMBER_WORDS[token]
+        if token in ORDINAL_WORDS:
+            return ORDINAL_WORDS[token]
+
+    return default
 
 
 def split_tokens(text: str, regex: str, max_items: int) -> List[str]:
@@ -984,7 +1032,7 @@ def parse_camper_rows(df: pd.DataFrame, config: dict) -> List[Camper]:
         full_name = normalize_text(f"{first} {last}")
         if not first and not last:
             continue
-        grade = to_int(row.get(m["grade"]), default=-1)
+        grade = parse_grade_value(row.get(m["grade"]), default=-1)
         if grade < 0:
             continue
         camper = Camper(
