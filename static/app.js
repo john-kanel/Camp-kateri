@@ -1235,6 +1235,16 @@ function cabinLabelFromKey(cabinKey) {
   return text.split("|").map((x) => x.trim()).slice(1).join(" | ") || "unknown cabin";
 }
 
+// Sequential display label for cabins: position in cabinOrder + 1.
+// Independent of whatever the upstream data named the cabin, so duplicate or
+// garbage cabin names from the input never leak into the UI.
+function cabinDisplayLabel(state, cabinKey) {
+  if (!state || !Array.isArray(state.cabinOrder)) return cabinLabelFromKey(cabinKey);
+  const idx = state.cabinOrder.indexOf(cabinKey);
+  if (idx < 0) return cabinLabelFromKey(cabinKey);
+  return `Cabin ${idx + 1}`;
+}
+
 function camperFirstNameSortKey(name) {
   const clean = String(name || "").trim().replace(/\s+/g, " ");
   if (!clean) return "";
@@ -1445,7 +1455,7 @@ function recomputeLiveRoommateStatus(state) {
           status: "request fulfilled",
         });
       } else {
-        const cabinLabel = targetCabin ? cabinLabelFromKey(targetCabin) : "unknown cabin";
+        const cabinLabel = targetCabin ? cabinDisplayLabel(state, targetCabin) : "unknown cabin";
         live.push({
           emoji: "🔴",
           target: req.target || req.requested || "unknown",
@@ -1724,7 +1734,7 @@ function renderCabinLayoutFromState(state) {
       card.classList.add("cabin-boy");
     }
     const count = cabin.members.length;
-    const displayName = String(cabin.cabin || cabin.key || "Cabin").trim() || "Cabin";
+    const displayName = cabinDisplayLabel(state, cabinKey);
     title.textContent = `${displayName} • ${count} ${count === 1 ? "camper" : "campers"}`;
     card.appendChild(title);
 
