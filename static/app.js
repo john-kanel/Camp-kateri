@@ -1467,10 +1467,6 @@ function moveCamperBetweenCabins(state, camperId, targetCabinKey) {
   const camper = state.camperById[camperId];
   if (!camper) return false;
   const sourceWeek = source ? source.week : String(camper.week || "");
-  if (sourceWeek !== target.week) {
-    setSectionStatus("camperStatusWrap", "camperStatusText", "You can only drag campers between cabins in the same week.", true);
-    return false;
-  }
   if (source) {
     const idx = source.members.findIndex((m) => m.camperId === camperId);
     if (idx < 0) return false;
@@ -1655,54 +1651,50 @@ function renderUnassignedFromState(state) {
     camperUnassignedList.appendChild(empty);
     return;
   }
-  weeks.forEach((week) => {
-    const members = [...(state.unassignedByWeek[week] || [])].sort((a, b) => {
-      const firstA = camperFirstNameSortKey(a.name);
-      const firstB = camperFirstNameSortKey(b.name);
-      if (firstA < firstB) return -1;
-      if (firstA > firstB) return 1;
-      return String(a.name || "").localeCompare(String(b.name || ""));
+  // Flatten all unassigned campers across weeks; we no longer surface a week
+  // label since the user processes one week at a time.
+  const allMembers = weeks.flatMap((week) => state.unassignedByWeek[week] || []);
+  allMembers.sort((a, b) => {
+    const firstA = camperFirstNameSortKey(a.name);
+    const firstB = camperFirstNameSortKey(b.name);
+    if (firstA < firstB) return -1;
+    if (firstA > firstB) return 1;
+    return String(a.name || "").localeCompare(String(b.name || ""));
+  });
+  allMembers.forEach((camper) => {
+    const li = document.createElement("li");
+    li.className = "camper-row";
+    li.draggable = true;
+    li.dataset.camperId = camper.camperId;
+    li.addEventListener("dragstart", (e) => {
+      activeDrag = { type: "camper", id: camper.camperId };
+      e.dataTransfer.setData("text/plain", camper.camperId);
+      e.dataTransfer.effectAllowed = "move";
     });
-    if (!members.length) return;
-    const weekLi = document.createElement("li");
-    weekLi.textContent = `${week}`;
-    weekLi.className = "tiny";
-    camperUnassignedList.appendChild(weekLi);
-    members.forEach((camper) => {
-      const li = document.createElement("li");
-      li.className = "camper-row";
-      li.draggable = true;
-      li.dataset.camperId = camper.camperId;
-      li.addEventListener("dragstart", (e) => {
-        activeDrag = { type: "camper", id: camper.camperId };
-        e.dataTransfer.setData("text/plain", camper.camperId);
-        e.dataTransfer.effectAllowed = "move";
-      });
-      li.addEventListener("dragend", () => { activeDrag = null; });
-      const nameSpan = document.createElement("span");
-      nameSpan.className = "camper-name";
-      nameSpan.textContent = camper.name || "Unknown";
-      appendRoommateEmojisToName(nameSpan, camper);
-      if (isDisabilityFlagged(camper.disabilityFlag)) {
-        const fire = document.createElement("span");
-        fire.className = "camper-flag";
-        fire.textContent = " 🔥";
-        fire.title = "Medical flag present";
-        nameSpan.appendChild(fire);
-      }
-      if (camper.unassignedReason) {
-        const reasonSpan = document.createElement("span");
-        reasonSpan.className = "tiny";
-        reasonSpan.textContent = ` - ${camper.unassignedReason}`;
-        nameSpan.appendChild(reasonSpan);
-      }
-      const gradeSpan = document.createElement("span");
-      gradeSpan.className = "camper-grade";
-      gradeSpan.textContent = camper.grade ? toGradeEmoji(String(camper.grade)) : "?";
-      li.appendChild(nameSpan);
-      li.appendChild(gradeSpan);
-      camperUnassignedList.appendChild(li);
-    });
+    li.addEventListener("dragend", () => { activeDrag = null; });
+    const nameSpan = document.createElement("span");
+    nameSpan.className = "camper-name";
+    nameSpan.textContent = camper.name || "Unknown";
+    appendRoommateEmojisToName(nameSpan, camper);
+    if (isDisabilityFlagged(camper.disabilityFlag)) {
+      const fire = document.createElement("span");
+      fire.className = "camper-flag";
+      fire.textContent = " 🔥";
+      fire.title = "Medical flag present";
+      nameSpan.appendChild(fire);
+    }
+    if (camper.unassignedReason) {
+      const reasonSpan = document.createElement("span");
+      reasonSpan.className = "tiny";
+      reasonSpan.textContent = ` - ${camper.unassignedReason}`;
+      nameSpan.appendChild(reasonSpan);
+    }
+    const gradeSpan = document.createElement("span");
+    gradeSpan.className = "camper-grade";
+    gradeSpan.textContent = camper.grade ? toGradeEmoji(String(camper.grade)) : "?";
+    li.appendChild(nameSpan);
+    li.appendChild(gradeSpan);
+    camperUnassignedList.appendChild(li);
   });
 }
 
@@ -1717,7 +1709,7 @@ function renderCabinLayoutFromState(state) {
 
   const help = document.createElement("p");
   help.className = "tiny";
-  help.textContent = "Tip: Drag a camper to another cabin (same week). Roommate emojis update live.";
+  help.textContent = "Tip: Drag a camper to any other cabin. Drag into the Unassigned panel to remove them. Roommate emojis update live.";
   camperCabinLayout.appendChild(help);
 
   state.cabinOrder.forEach((cabinKey) => {
@@ -1732,7 +1724,8 @@ function renderCabinLayoutFromState(state) {
       card.classList.add("cabin-boy");
     }
     const count = cabin.members.length;
-    title.textContent = `${cabin.key} • ${count} ${count === 1 ? "camper" : "campers"}`;
+    const displayName = String(cabin.cabin || cabin.key || "Cabin").trim() || "Cabin";
+    title.textContent = `${displayName} • ${count} ${count === 1 ? "camper" : "campers"}`;
     card.appendChild(title);
 
     const list = document.createElement("ul");
