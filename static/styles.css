@@ -270,6 +270,9 @@ textarea {
   background: var(--camp-paper);
   padding: 12px;
   box-shadow: 0 1px 4px rgba(42, 52, 40, 0.04);
+  min-height: 120px;
+  display: flex;
+  flex-direction: column;
 }
 
 .cabin-card.cabin-girl {
@@ -289,6 +292,8 @@ textarea {
 .cabin-card ul {
   margin: 0;
   padding-left: 16px;
+  flex: 1 1 auto;
+  min-height: 60px;
 }
 
 .cabin-card li.camper-row {
@@ -296,15 +301,22 @@ textarea {
   align-items: center;
   gap: 8px;
   cursor: grab;
+  user-select: none;
+  -webkit-user-select: none;
 }
 
 .cabin-card li.camper-row:active {
   cursor: grabbing;
 }
 
-.cabin-card ul.drop-hover {
+.cabin-card.drop-hover {
   outline: 2px dashed var(--camp-pine);
-  border-radius: 6px;
+  outline-offset: -4px;
+  background: var(--camp-accent-soft);
+}
+
+.cabin-card.cabin-girl.drop-hover,
+.cabin-card.cabin-boy.drop-hover {
   background: var(--camp-accent-soft);
 }
 
@@ -369,6 +381,12 @@ textarea {
   border-radius: 4px;
   background: var(--camp-chip);
   border: 1px solid rgba(47, 93, 65, 0.15);
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.counselor-chip:active {
+  cursor: grabbing;
 }
 
 .counselor-delete-btn {
@@ -488,6 +506,8 @@ textarea {
   align-items: center;
   gap: 8px;
   cursor: grab;
+  user-select: none;
+  -webkit-user-select: none;
 }
 
 .unassigned-wrap li.camper-row:active {

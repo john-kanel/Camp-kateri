@@ -1650,17 +1650,28 @@ function renderCabinLayoutFromState(state) {
 
     const list = document.createElement("ul");
     list.dataset.cabinKey = cabinKey;
-    list.addEventListener("dragover", (e) => {
+
+    // Bind the drop handlers to the whole card (not just the <ul>) so empty
+    // cabins still have a generous hit area. Required for dragging misfits
+    // into cabins that currently have zero or one member, especially on
+    // Chrome/Firefox where hit-testing is stricter than Safari's.
+    card.addEventListener("dragenter", (e) => {
+      if (!activeDrag || activeDrag.type !== "camper") return;
       e.preventDefault();
-      list.classList.add("drop-hover");
     });
-    list.addEventListener("dragleave", (e) => {
-      if (list.contains(e.relatedTarget)) return;
-      list.classList.remove("drop-hover");
-    });
-    list.addEventListener("drop", (e) => {
+    card.addEventListener("dragover", (e) => {
+      if (!activeDrag || activeDrag.type !== "camper") return;
       e.preventDefault();
-      list.classList.remove("drop-hover");
+      e.dataTransfer.dropEffect = "move";
+      card.classList.add("drop-hover");
+    });
+    card.addEventListener("dragleave", (e) => {
+      if (card.contains(e.relatedTarget)) return;
+      card.classList.remove("drop-hover");
+    });
+    card.addEventListener("drop", (e) => {
+      e.preventDefault();
+      card.classList.remove("drop-hover");
       if (!activeDrag || activeDrag.type !== "camper") return;
       const camperId = activeDrag.id;
       activeDrag = null;
