@@ -952,8 +952,14 @@ function renderCounselorUnassigned(state) {
     return;
   }
   counselorUnassignedWrap.classList.remove("hidden");
-  counselorUnassignedList.ondragover = (e) => {
+  counselorUnassignedList.ondragenter = (e) => {
+    if (!activeDrag || activeDrag.type !== "counselor") return;
     e.preventDefault();
+  };
+  counselorUnassignedList.ondragover = (e) => {
+    if (!activeDrag || activeDrag.type !== "counselor") return;
+    e.preventDefault();
+    e.dataTransfer.dropEffect = "move";
     counselorUnassignedList.classList.add("drop-hover");
   };
   counselorUnassignedList.ondragleave = (e) => {
@@ -1054,8 +1060,14 @@ function renderCounselorLayout(state) {
         td.dataset.occupiedBy = counselor.assignmentId;
         td.appendChild(buildCounselorChip(counselor, state));
       }
-      td.addEventListener("dragover", (e) => {
+      td.addEventListener("dragenter", (e) => {
+        if (!activeDrag || activeDrag.type !== "counselor") return;
         e.preventDefault();
+      });
+      td.addEventListener("dragover", (e) => {
+        if (!activeDrag || activeDrag.type !== "counselor") return;
+        e.preventDefault();
+        e.dataTransfer.dropEffect = "move";
         td.classList.add("drop-hover");
       });
       td.addEventListener("dragleave", (e) => {
@@ -1126,8 +1138,14 @@ function renderCounselorLayout(state) {
         td.dataset.occupiedBy = counselor.assignmentId;
         td.appendChild(buildCounselorChip(counselor, state));
       }
-      td.addEventListener("dragover", (e) => {
+      td.addEventListener("dragenter", (e) => {
+        if (!activeDrag || activeDrag.type !== "counselor") return;
         e.preventDefault();
+      });
+      td.addEventListener("dragover", (e) => {
+        if (!activeDrag || activeDrag.type !== "counselor") return;
+        e.preventDefault();
+        e.dataTransfer.dropEffect = "move";
         td.classList.add("drop-hover");
       });
       td.addEventListener("dragleave", (e) => {
