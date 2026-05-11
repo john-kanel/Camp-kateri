@@ -1471,6 +1471,29 @@ function moveCamperBetweenCabins(state, camperId, targetCabinKey) {
   return true;
 }
 
+function moveCamperToUnassigned(state, camperId) {
+  if (!state || !camperId) return false;
+  const sourceCabinKey = state.camperCabinById[camperId];
+  if (!sourceCabinKey) return false;
+  const camper = state.camperById[camperId];
+  if (!camper) return false;
+  const source = state.cabinsByKey[sourceCabinKey];
+  // Already in unassigned for this week — nothing to do.
+  if (!source) return false;
+  const week = source.week || String(camper.week || "Week-Unknown");
+  const idx = source.members.findIndex((m) => m.camperId === camperId);
+  if (idx < 0) return false;
+  source.members.splice(idx, 1);
+  if (!state.unassignedByWeek[week]) state.unassignedByWeek[week] = [];
+  // Mark the reason so the row renders a hint about why it's unassigned.
+  camper.unassignedReason = "Manually unassigned";
+  camper.week = week;
+  state.unassignedByWeek[week].push(camper);
+  state.camperCabinById[camperId] = `__UNASSIGNED__|${week}`;
+  recomputeLiveRoommateStatus(state);
+  return true;
+}
+
 function appendRoommateEmojisToName(nameSpan, camper) {
   if (Array.isArray(camper.roommateLiveDetail) && camper.roommateLiveDetail.length > 0) {
     const reqSpan = document.createElement("span");
@@ -1555,19 +1578,65 @@ function addUnassignedToState(unassignedList) {
   });
 }
 
+function attachUnassignedDropHandlers(state) {
+  // Idempotent: clear via property assignment so re-renders don't pile up
+  // multiple listeners on the wrap.
+  camperUnassignedWrap.ondragenter = (e) => {
+    if (!activeDrag || activeDrag.type !== "camper") return;
+    e.preventDefault();
+  };
+  camperUnassignedWrap.ondragover = (e) => {
+    if (!activeDrag || activeDrag.type !== "camper") return;
+    e.preventDefault();
+    e.dataTransfer.dropEffect = "move";
+    camperUnassignedWrap.classList.add("drop-hover");
+  };
+  camperUnassignedWrap.ondragleave = (e) => {
+    if (camperUnassignedWrap.contains(e.relatedTarget)) return;
+    camperUnassignedWrap.classList.remove("drop-hover");
+  };
+  camperUnassignedWrap.ondrop = (e) => {
+    e.preventDefault();
+    camperUnassignedWrap.classList.remove("drop-hover");
+    if (!activeDrag || activeDrag.type !== "camper") return;
+    const camperId = activeDrag.id;
+    activeDrag = null;
+    const beforeMove = captureCabinSnapshot(state);
+    const changed = moveCamperToUnassigned(state, camperId);
+    if (changed) {
+      cabinHistoryPast.push(beforeMove);
+      cabinHistoryFuture = [];
+      updateUndoRedoButtons();
+      setSectionStatus("camperStatusWrap", "camperStatusText", "Camper moved to Unassigned.", false);
+      renderCabinLayoutFromState(state);
+      renderUnassignedFromState(state);
+    }
+  };
+}
+
 function renderUnassignedFromState(state) {
   camperUnassignedList.innerHTML = "";
   if (!state) {
     camperUnassignedWrap.classList.add("hidden");
+    camperUnassignedWrap.ondragenter = null;
+    camperUnassignedWrap.ondragover = null;
+    camperUnassignedWrap.ondragleave = null;
+    camperUnassignedWrap.ondrop = null;
     return;
   }
+  // Always show the wrap during review so users can drop campers into it,
+  // even when there are currently no unassigned campers.
+  camperUnassignedWrap.classList.remove("hidden");
+  attachUnassignedDropHandlers(state);
   const weeks = Object.keys(state.unassignedByWeek || {}).sort();
   const total = weeks.reduce((acc, week) => acc + (state.unassignedByWeek[week] || []).length, 0);
   if (total === 0) {
-    camperUnassignedWrap.classList.add("hidden");
+    const empty = document.createElement("li");
+    empty.className = "tiny unassigned-empty";
+    empty.textContent = "Drag a camper here to mark them unassigned.";
+    camperUnassignedList.appendChild(empty);
     return;
   }
-  camperUnassignedWrap.classList.remove("hidden");
   weeks.forEach((week) => {
     const members = [...(state.unassignedByWeek[week] || [])].sort((a, b) => {
       const firstA = camperFirstNameSortKey(a.name);

@@ -326,6 +326,23 @@ textarea {
   background: var(--camp-accent-soft);
 }
 
+.unassigned-wrap.drop-hover {
+  outline: 2px dashed var(--camp-pine);
+  outline-offset: -4px;
+  background: var(--camp-accent-soft);
+  border-radius: 6px;
+}
+
+.unassigned-wrap .unassigned-empty {
+  list-style: none;
+  margin-left: -18px;
+  padding: 10px 12px;
+  border: 1px dashed var(--camp-border);
+  border-radius: 6px;
+  color: var(--camp-text-muted);
+  font-style: italic;
+}
+
 .counselor-matrix {
   table-layout: auto;
   width: max-content;
