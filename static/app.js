@@ -49,6 +49,10 @@ let cabinHistoryPast = [];
 let cabinHistoryFuture = [];
 let counselorReviewState = null;
 
+// Tracks the in-flight drag so drop handlers don't rely on custom MIME types,
+// which Chrome and Firefox handle inconsistently compared to Safari.
+let activeDrag = null; // { type: 'counselor' | 'camper', id: string }
+
 function showTab(tabId) {
   const onResults = tabId === "results";
   resultsTab.classList.toggle("hidden", !onResults);
@@ -743,9 +747,11 @@ function renderCounselorCardMember(list, counselor, state) {
   li.draggable = true;
   li.dataset.assignmentId = counselor.assignmentId;
   li.addEventListener("dragstart", (e) => {
-    e.dataTransfer.setData("text/counselor-assignment-id", counselor.assignmentId);
+    activeDrag = { type: "counselor", id: counselor.assignmentId };
+    e.dataTransfer.setData("text/plain", counselor.assignmentId);
     e.dataTransfer.effectAllowed = "move";
   });
+  li.addEventListener("dragend", () => { activeDrag = null; });
   const nameSpan = document.createElement("span");
   nameSpan.className = "camper-name";
   const parts = [counselor.name || "Unknown"];
@@ -910,9 +916,11 @@ function buildCounselorChip(counselor, state) {
   }
   chip.title = counselor.loadStatusReason || counselor.email || counselor.availability || "";
   chip.addEventListener("dragstart", (e) => {
-    e.dataTransfer.setData("text/counselor-assignment-id", counselor.assignmentId);
+    activeDrag = { type: "counselor", id: counselor.assignmentId };
+    e.dataTransfer.setData("text/plain", counselor.assignmentId);
     e.dataTransfer.effectAllowed = "move";
   });
+  chip.addEventListener("dragend", () => { activeDrag = null; });
   const deleteBtn = document.createElement("button");
   deleteBtn.type = "button";
   deleteBtn.className = "counselor-delete-btn";
@@ -948,14 +956,16 @@ function renderCounselorUnassigned(state) {
     e.preventDefault();
     counselorUnassignedList.classList.add("drop-hover");
   };
-  counselorUnassignedList.ondragleave = () => {
+  counselorUnassignedList.ondragleave = (e) => {
+    if (counselorUnassignedList.contains(e.relatedTarget)) return;
     counselorUnassignedList.classList.remove("drop-hover");
   };
   counselorUnassignedList.ondrop = (e) => {
     e.preventDefault();
     counselorUnassignedList.classList.remove("drop-hover");
-    const assignmentId = e.dataTransfer.getData("text/counselor-assignment-id");
-    if (!assignmentId) return;
+    if (!activeDrag || activeDrag.type !== "counselor") return;
+    const assignmentId = activeDrag.id;
+    activeDrag = null;
     const changed = moveCounselorBetweenCamps(state, assignmentId, "__UNASSIGNED__");
     if (changed) {
       renderCounselorLayout(state);
@@ -1048,12 +1058,16 @@ function renderCounselorLayout(state) {
         e.preventDefault();
         td.classList.add("drop-hover");
       });
-      td.addEventListener("dragleave", () => td.classList.remove("drop-hover"));
+      td.addEventListener("dragleave", (e) => {
+        if (td.contains(e.relatedTarget)) return;
+        td.classList.remove("drop-hover");
+      });
       td.addEventListener("drop", (e) => {
         e.preventDefault();
         td.classList.remove("drop-hover");
-        const assignmentId = e.dataTransfer.getData("text/counselor-assignment-id");
-        if (!assignmentId) return;
+        if (!activeDrag || activeDrag.type !== "counselor") return;
+        const assignmentId = activeDrag.id;
+        activeDrag = null;
         if (td.dataset.occupiedBy && td.dataset.occupiedBy !== assignmentId) {
           setSectionStatus("counselorStatusWrap", "counselorStatusText", "That slot is already filled. Move to an empty slot or Unassigned first.", true);
           return;
@@ -1116,12 +1130,16 @@ function renderCounselorLayout(state) {
         e.preventDefault();
         td.classList.add("drop-hover");
       });
-      td.addEventListener("dragleave", () => td.classList.remove("drop-hover"));
+      td.addEventListener("dragleave", (e) => {
+        if (td.contains(e.relatedTarget)) return;
+        td.classList.remove("drop-hover");
+      });
       td.addEventListener("drop", (e) => {
         e.preventDefault();
         td.classList.remove("drop-hover");
-        const assignmentId = e.dataTransfer.getData("text/counselor-assignment-id");
-        if (!assignmentId) return;
+        if (!activeDrag || activeDrag.type !== "counselor") return;
+        const assignmentId = activeDrag.id;
+        activeDrag = null;
         if (td.dataset.occupiedBy && td.dataset.occupiedBy !== assignmentId) {
           setSectionStatus("counselorStatusWrap", "counselorStatusText", "That slot is already filled. Move to an empty slot or Unassigned first.", true);
           return;
@@ -1569,9 +1587,11 @@ function renderUnassignedFromState(state) {
       li.draggable = true;
       li.dataset.camperId = camper.camperId;
       li.addEventListener("dragstart", (e) => {
-        e.dataTransfer.setData("text/camper-id", camper.camperId);
+        activeDrag = { type: "camper", id: camper.camperId };
+        e.dataTransfer.setData("text/plain", camper.camperId);
         e.dataTransfer.effectAllowed = "move";
       });
+      li.addEventListener("dragend", () => { activeDrag = null; });
       const nameSpan = document.createElement("span");
       nameSpan.className = "camper-name";
       nameSpan.textContent = camper.name || "Unknown";
@@ -1634,14 +1654,16 @@ function renderCabinLayoutFromState(state) {
       e.preventDefault();
       list.classList.add("drop-hover");
     });
-    list.addEventListener("dragleave", () => {
+    list.addEventListener("dragleave", (e) => {
+      if (list.contains(e.relatedTarget)) return;
       list.classList.remove("drop-hover");
     });
     list.addEventListener("drop", (e) => {
       e.preventDefault();
       list.classList.remove("drop-hover");
-      const camperId = e.dataTransfer.getData("text/camper-id");
-      if (!camperId) return;
+      if (!activeDrag || activeDrag.type !== "camper") return;
+      const camperId = activeDrag.id;
+      activeDrag = null;
       const beforeMove = captureCabinSnapshot(state);
       const changed = moveCamperBetweenCabins(state, camperId, cabinKey);
       if (changed) {
@@ -1671,9 +1693,11 @@ function renderCabinLayoutFromState(state) {
       li.draggable = true;
       li.dataset.camperId = r.camperId;
       li.addEventListener("dragstart", (e) => {
-        e.dataTransfer.setData("text/camper-id", r.camperId);
+        activeDrag = { type: "camper", id: r.camperId };
+        e.dataTransfer.setData("text/plain", r.camperId);
         e.dataTransfer.effectAllowed = "move";
       });
+      li.addEventListener("dragend", () => { activeDrag = null; });
 
       const nameSpan = document.createElement("span");
       nameSpan.className = "camper-name";
